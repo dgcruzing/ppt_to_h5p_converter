@@ -4,7 +4,7 @@ The combination of brainstorming with Claude and working with the H5P libraries 
 Acknowledgements
 
 Claude AI for assistance in development and code generation
-MM-Lehmann for the inspiration from the pptx2h5p project
+MM-Lehmann for the inspiration from the [pptx2h5p project](https://github.com/MM-Lehmann/pptx2h5p)
 The H5P community for their excellent libraries and documentation
 
 We hope this tool proves useful in shortening development time for educators creating H5P content from PowerPoint presentations.
