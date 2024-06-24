@@ -32,4 +32,4 @@ Contributions, issues, and feature requests are welcome. Feel free to check the 
 License
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-Look to issues as I am getting false positives, plus they are converting a big big at the moment. 
+Look to issues as I am getting false positives, plus they are converting a bit big at the moment. 
