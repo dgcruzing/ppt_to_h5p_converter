@@ -31,3 +31,5 @@ Contributing
 Contributions, issues, and feature requests are welcome. Feel free to check the issues page if you want to contribute.
 License
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+Look to issues as I am getting false positives, plus they are converting a big big at the moment. 
