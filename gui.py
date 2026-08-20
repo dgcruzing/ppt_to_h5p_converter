@@ -1,6 +1,7 @@
 import os
 import tkinter as tk
 from tkinter import filedialog, ttk
+import tkinter.font as tkfont
 
 
 class ConverterView(tk.Tk):
@@ -70,18 +71,79 @@ class ConverterView(tk.Tk):
         self.queue_tree.heading("output_path", text="Output Path")
         self.queue_tree.heading("status", text="Status")
 
-        self.queue_tree.column("filename", width=200, anchor="w")
-        self.queue_tree.column("resolution", width=90, anchor="center")
-        self.queue_tree.column("output_path", width=250, anchor="w")
-        self.queue_tree.column("status", width=120, anchor="center")
+        self.queue_tree.column(
+            "filename", width=220, minwidth=150, anchor="w", stretch=False
+        )
+        self.queue_tree.column(
+            "resolution", width=100, minwidth=80, anchor="center", stretch=False
+        )
+        self.queue_tree.column(
+            "output_path", width=350, minwidth=200, anchor="w", stretch=False
+        )
+        self.queue_tree.column(
+            "status", width=120, minwidth=100, anchor="center", stretch=False
+        )
 
-        scrollbar = ttk.Scrollbar(
+        v_scrollbar = ttk.Scrollbar(
             frame, orient="vertical", command=self.queue_tree.yview
         )
-        self.queue_tree.configure(yscrollcommand=scrollbar.set)
+        self.queue_tree.configure(yscrollcommand=v_scrollbar.set)
+
+        h_scrollbar = ttk.Scrollbar(
+        frame, orient="horizontal", command=self.queue_tree.xview
+        )
+        self.queue_tree.configure(xscrollcommand=h_scrollbar.set)
 
         self.queue_tree.grid(row=0, column=0, sticky="nsew")
-        scrollbar.grid(row=0, column=1, sticky="ns")
+        v_scrollbar.grid(row=0, column=1, sticky="ns")
+        h_scrollbar.grid(row=1, column=0, sticky="ew")
+
+        self.queue_tree.bind("<Double-1>", self._on_tree_double_click)
+
+    def _autofit_column(self, col_id: str):
+        """Adjusts a single Treeview column's width based on its longest text entry or header.
+
+            col_id: The column identifier returned by identify_column (e.g. '#1',
+            '#2') or column name ('filename').
+        """
+        font = tkfont.Font()
+        padding = 2
+
+        # Resolve column name from symbolic ID (e.g. '#1' -> 'filename')
+        if col_id.startswith("#"):
+            col_index = int(col_id.replace("#", "")) - 1
+            if col_index < 0 or col_index >= len(self.queue_tree["columns"]):
+                return
+            col_name = self.queue_tree["columns"][col_index]
+        else:
+            col_name = col_id
+            col_index = list(self.queue_tree["columns"]).index(col_name)
+
+        # Start with header text measurement
+        header_text = self.queue_tree.heading(col_name, "text")
+        max_width = font.measure(header_text)
+
+        # Compare against cell values in that specific column
+        for item_id in self.queue_tree.get_children():
+            values = self.queue_tree.item(item_id, "values")
+            if col_index < len(values):
+                cell_text = str(values[col_index])
+                cell_width = font.measure(cell_text)
+                if cell_width > max_width:
+                    max_width = cell_width
+
+        # Apply updated width only to the target column
+        self.queue_tree.column(col_name, width=max_width)
+
+    def _on_tree_double_click(self, event):
+        """Event handler for double-clicking Treeview column headers or separators."""
+        region = self.queue_tree.identify_region(event.x, event.y)
+
+        if region in ("separator", "heading"):
+            # Identify the exact column clicked (e.g. '#1', '#2', etc.)
+            col_id = self.queue_tree.identify_column(event.x)
+            if col_id:
+                self._autofit_column(col_id)
 
     def _build_settings_panel(self):
         self.output_dir_var = tk.StringVar()
@@ -91,7 +153,7 @@ class ConverterView(tk.Tk):
         panel = ttk.LabelFrame(
             self, text=" Export Settings ", padding=(10, 8)
         )
-        panel.grid(row=2, column=0, sticky="ew", padx=10, pady=(0, 5))
+        panel.grid(row=2, column=0, sticky="ew", padx=0, pady=(0, 0))
         panel.columnconfigure(1, weight=1)
 
         # Default Output Folder
