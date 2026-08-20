@@ -1,10 +1,10 @@
 ppt_to_h5p/
-│── main.py              # Application entry point
-│── gui.py               # Tkinter GUI layout and event handlers
+│── main.py # Application entry point
+│── gui.py # Tkinter GUI layout and event handlers
 │── converter/
-│   ├── __init__.py
-│   ├── ppt_exporter.py  # PowerPoint COM automation
-│   └── h5p_builder.py   # H5P JSON schema & ZIP archiving
+│ ├── **init**.py
+│ ├── ppt_exporter.py # PowerPoint COM automation
+│ └── h5p_builder.py # H5P JSON schema & ZIP archiving
 └── utils/
-    ├── __init__.py
-    └── logger.py        # Centralized logging setup & path resolution
+├── **init**.py
+└── logger.py # Centralized logging setup & path resolution
