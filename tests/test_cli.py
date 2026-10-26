@@ -153,7 +153,53 @@ class CliTests(unittest.TestCase):
                 self.assertIn(f"-env:UserInstallation={(self.directory / 'profile').as_uri()}", command)
                 options = json.loads(command[command.index("--convert-to") + 1].split(":", 2)[2])
                 self.assertEqual(options["ExportHiddenSlides"]["value"], hidden)
+                self.assertFalse(options["ExportNotes"]["value"])
                 self.assertFalse(options["ExportNotesPages"]["value"])
+
+    def test_pdf_comments_are_omitted_without_removing_slide_content(self):
+        import pypdfium2 as pdfium
+        from PIL import Image
+
+        def stream(content, attributes=b""):
+            return (b"<< " + attributes + f" /Length {len(content)} >>\nstream\n".encode()
+                    + content + b"\nendstream")
+
+        # A blue slide object and a separate yellow review-comment annotation.
+        objects = [
+            b"<< /Type /Catalog /Pages 2 0 R >>",
+            b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] "
+            b"/Resources << >> /Contents 4 0 R /Annots [5 0 R] >>",
+            stream(b"0 0 1 rg 10 10 20 20 re f"),
+            b"<< /Type /Annot /Subtype /Text /Rect [40 40 60 60] "
+            b"/Contents (Review comment) /AP << /N 6 0 R >> >>",
+            stream(b"1 1 0 rg 0 0 20 20 re f",
+                   b"/Type /XObject /Subtype /Form /BBox [0 0 20 20] /Resources << >>"),
+        ]
+        data = bytearray(b"%PDF-1.4\n")
+        offsets = [0]
+        for number, obj in enumerate(objects, 1):
+            offsets.append(len(data))
+            data.extend(f"{number} 0 obj\n".encode() + obj + b"\nendobj\n")
+        xref = len(data)
+        data.extend(f"xref\n0 {len(offsets)}\n0000000000 65535 f \n".encode())
+        for offset in offsets[1:]:
+            data.extend(f"{offset:010d} 00000 n \n".encode())
+        data.extend(f"trailer\n<< /Size {len(offsets)} /Root 1 0 R >>\n"
+                    f"startxref\n{xref}\n%%EOF\n".encode())
+        pdf = self.directory / "comment.pdf"
+        pdf.write_bytes(data)
+
+        # Ensure the fixture really shows the comment with default rendering.
+        with pdfium.PdfDocument(pdf) as document, contextlib.closing(document[0]) as page:
+            with contextlib.closing(page.render()) as bitmap, bitmap.to_pil() as image:
+                self.assertEqual(image.getpixel((50, 50)), (255, 255, 0))
+
+        images = cli.render_pdf(pdf, self.directory, (100, 100), [12])
+        self.assertEqual([number for number, _ in images], [12])
+        with Image.open(images[0][1]) as image:
+            self.assertEqual(image.getpixel((50, 50)), (255, 255, 255))
+            self.assertEqual(image.getpixel((20, 80)), (0, 0, 255))
 
     def test_real_subprocess_timeout_and_failure(self):
         with self.assertRaisesRegex(cli.ConversionError, "exceeded 0.1 seconds"):

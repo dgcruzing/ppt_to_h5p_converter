@@ -236,6 +236,9 @@ notes are not transferred. LibreOffice may render fonts, diagrams, and layouts
 differently from PowerPoint. Install the source fonts and inspect the result
 before publishing.
 
+The CLI excludes review comments from the slide images, including comment icons
+in the LibreOffice PDF rendering route. Comments in the source PPTX are preserved.
+
 The destination needs Course Presentation **1.25**, Image **1.1**, FontAwesome
 **4.5**, H5P.FontIcons **1.0**, H5P.JoubelUI **1.3**, and H5P.Transition **1.0**,
 including their dependencies. Archives contain content and metadata rather than

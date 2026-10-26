@@ -240,6 +240,7 @@ def export_pdf(source, directory, executable, include_hidden, timeout, verbose=F
     profile = directory / "profile"
     pdf_filter = "pdf:impress_pdf_Export:" + json.dumps({
         "ExportHiddenSlides": {"type": "boolean", "value": include_hidden},
+        "ExportNotes": {"type": "boolean", "value": False},
         "ExportNotesPages": {"type": "boolean", "value": False},
         "UseLosslessCompression": {"type": "boolean", "value": True},
         "ReduceImageResolution": {"type": "boolean", "value": False},
@@ -288,7 +289,8 @@ def render_pdf(pdf, directory, target, expected_numbers):
         for index, number in enumerate(expected_numbers):
             with contextlib.closing(document[index]) as page:
                 scale = min(target[0] / page.get_width(), target[1] / page.get_height())
-                with contextlib.closing(page.render(scale=scale)) as bitmap:
+                # Review comments are PDF annotations, not slide content.
+                with contextlib.closing(page.render(scale=scale, draw_annots=False)) as bitmap:
                     with bitmap.to_pil() as image:
                         path = directory / f"slide_{number}.png"
                         normalize_image(image, target, path)
