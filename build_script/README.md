@@ -12,6 +12,7 @@ source entry points and Windows GUI packaging without duplicating that guide.
 | v1.1 | [ppt_to_h5p_converter v1.1.py](<ppt_to_h5p_converter v1.1.py>) | Windows Tkinter GUI; fixed 3840×2160 exports |
 | v1.2 | [pptx_to_h5p_converter buttons v1_2.py](<pptx_to_h5p_converter buttons v1_2.py>) | Windows Tkinter GUI; high/low resolution selection |
 | v1.3 | [pptx_to_h5p_converter cli v1_3.py](<pptx_to_h5p_converter cli v1_3.py>) | Cross-platform CLI; single-file and folder processing |
+| v1.4 | [pptx_to_h5p_converter pdf v1_4.py](<pptx_to_h5p_converter pdf v1_4.py>) | Cross-platform CLI; PPTX, PDF, and mixed-folder processing |
 
 ## Working directory and dependencies
 
@@ -26,6 +27,14 @@ directory. The shared [requirements.txt](../requirements.txt) and
   `--ignore-missing-fonts` flag bypasses font verification and its warnings.
 - The documented shared environment uses Python 3.11 or newer. PyInstaller is an
   optional build dependency, not a conversion requirement.
+- PDF input: Pillow and pypdfium2 only. No Office app or font inventory is used.
+  See the [unified v1.4 guide](../README.md#command-line-v14-pptx-and-pdf).
+- V1.4 requires [h5p_converter_common.py](h5p_converter_common.py) alongside it
+  for file discovery, rendering, and H5P packaging. PPTX input also requires
+  [pptx_converter.py](pptx_converter.py) and the unchanged
+  [font checker](<pptx_to_h5p_converter cli v1_3 verify fonts.py>).
+  PDF-only v1.4 conversion requires just the entry point and the common helper.
+  The original v1.3 CLI is unchanged and does not require the v1.4 helper modules.
 
 ## Building a Windows GUI executable
 
@@ -61,7 +70,7 @@ PowerPoint. Test the chosen build on Windows before distributing it. These
 packaging commands were checked against PyInstaller's documentation but have
 not been executed on Windows during this work.
 
-The v1.3 CLI is currently distributed as a Python script. Its PowerPoint worker
+The CLIs are currently distributed as Python scripts. The PowerPoint worker
 relaunches the script through the Python interpreter; the GUI packaging commands
 above are not a validated CLI packaging workflow.
 Keep the CLI's [font verification module](<pptx_to_h5p_converter cli v1_3 verify fonts.py>)

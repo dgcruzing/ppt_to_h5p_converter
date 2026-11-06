@@ -1,11 +1,13 @@
-# PowerPoint to H5P Converter
+# PowerPoint and PDF to H5P Converter
 
-Convert PowerPoint `.pptx` presentations into image-based H5P Course
-Presentations. Choose the **Windows GUI** for file selection with buttons or the
-**cross-platform CLI** for terminal use and folder conversion.
+Convert PowerPoint `.pptx` presentations and `.pdf` documents into image-based
+H5P Course Presentations. The **v1.4 cross-platform CLI** accepts either format
+and folders containing both. The original v1.3 CLI and Windows GUI
+entry points remain available. Legacy `.ppt` files are not supported by v1.4.
 
 - [Version differences](#version-differences)
 - [Windows GUI: v1.1 and v1.2](#windows-gui-v11-and-v12)
+- [Command line: v1.4 (PPTX and PDF)](#command-line-v14-pptx-and-pdf)
 - [Command line: v1.3](#command-line-v13)
 - [H5P output and compatibility](#h5p-output-and-compatibility)
 - [Development and verification](#development-and-verification)
@@ -31,6 +33,11 @@ original GUI; v1.3 adds a command-line interface, cross-platform app selection,
 folder processing, hidden-slide controls, and safer output handling. The GUI
 scripts have not been changed by the CLI work. v1.3 also explicitly declares the
 `H5P.Image 1.1` dependency used by each slide; the GUI archives omit that declaration.
+
+**v1.4** combines PPTX and PDF conversion in one CLI, including mixed folders.
+It retains v1.3's resolutions, presentation controls, and output protection.
+Its PDF and PPTX paths share image rendering and H5P packaging through
+`build_script/h5p_converter_common.py`. The original v1.3 scripts are unchanged.
 
 Exact source filenames and Windows executable build instructions are listed in
 [build_script/README.md](build_script/README.md).
@@ -97,6 +104,75 @@ included in this checkout; see the [build instructions](build_script/README.md#b
   setting when smaller images are sufficient.
 - GUI conversion runs synchronously without a timeout or cancellation control;
   the window can appear unresponsive while PowerPoint is exporting.
+
+## Command line: v1.4 (PPTX and PDF)
+
+Use Python 3.11 or newer and the virtual environment from the
+[CLI setup instructions](#requirements-and-setup-1). Install the shared
+dependencies with `python3 -m pip install -r requirements.txt`.
+PDF input requires Pillow and pypdfium2, with no Office installation or font
+inventory. PPTX input uses the same PowerPoint/LibreOffice and font requirements
+as v1.3: PowerPoint by default on Windows, LibreOffice on Mac and Linux, or
+explicit LibreOffice selection on Windows.
+
+From the repository root:
+
+```bash
+# One PPTX presentation
+python3 "build_script/pptx_to_h5p_converter pdf v1_4.py" "slides.pptx" -o "converted/slides.h5p"
+
+# One PDF, without requiring Office
+python3 "build_script/pptx_to_h5p_converter pdf v1_4.py" "document.pdf" -o "converted/document.h5p"
+
+# All PPTX and PDF files immediately inside a mixed folder
+python3 "build_script/pptx_to_h5p_converter pdf v1_4.py" "documents" -o "converted" --resolution low
+
+# Presentation controls apply to the PPTX files in this batch
+python3 "build_script/pptx_to_h5p_converter pdf v1_4.py" "documents" -o "converted" --app libreoffice --include-hidden --timeout 90 --force
+
+# List every option
+python3 "build_script/pptx_to_h5p_converter pdf v1_4.py" --help
+```
+
+On Windows, use `.\.venv\Scripts\python.exe` in place of `python3`.
+
+| Option | Behavior in v1.4 |
+| --- | --- |
+| `input` | A `.pptx` file, a `.pdf` file, or a folder containing either or both. Folder processing is not recursive. Uppercase extensions are supported; PowerPoint `~$` lock files and unsupported formats are skipped in folders. |
+| `-o`, `--output` | H5P filename for single input; directory for folder input. Defaults to beside each source. Parent directories are created. |
+| `--resolution high/low` | Applies to both formats. Default `high`: 1920×1080; `low`: 1280×720. Proportions are preserved on a white canvas. |
+| `--force` | Applies to both formats. Replace existing output only after successful conversion. |
+| `--verbose` | Applies to both formats. Print diagnostics and tracebacks to stderr. |
+| `--app auto/powerpoint/libreoffice` | PPTX only. Default `auto`: PowerPoint on Windows; LibreOffice elsewhere. |
+| `--libreoffice-path PATH` | PPTX only. Override LibreOffice discovery when LibreOffice is selected. |
+| `--include-hidden` | PPTX only. Include hidden slides, which are skipped by default. |
+| `--ignore-missing-fonts` | PPTX only. Skip font verification and its warnings, allowing substitute fonts. |
+| `--timeout SECONDS` | PPTX only. Positive number, default **30**, for each presentation's Office export. Rasterization and packaging are outside this timeout. |
+
+Presentation options are ignored for PDF files. Every PDF page is included in
+document order, preserving its proportions on a white canvas, including portrait
+and mixed-size documents. PDF review annotations are omitted. Text and links
+become static images; bookmarks, interactive forms, attachments, and other PDF
+interactions are not transferred. PDFs requiring an opening password must be
+unlocked before conversion. PPTX keeps the existing PowerPoint-to-PNG or
+LibreOffice-to-PDF-to-PNG route.
+
+Mixed folders are processed in filename order, with one `.h5p` per source.
+Conversion continues after individual failures. Missing Office setup or fonts
+can fail PPTX files while PDFs in the same batch still convert. Successful paths
+go to stdout; errors and final counts go to stderr. Exit codes are `0` for all
+succeeded, `1` for conversion failures or existing output, `2` for invalid
+arguments/input or conflicting output names, and `130` for interruption.
+
+**Output-name conflicts are rejected before conversion**, including with
+`--force`. For example, `course.pptx` and `course.pdf` would both write
+`course.h5p`. Rename one source, or convert them separately with different `-o`
+filenames. Conflicts are checked without regard to case.
+
+Keep `h5p_converter_common.py` beside the v1.4 script. For PPTX input, also keep
+`pptx_converter.py` and the unchanged `pptx_to_h5p_converter cli v1_3 verify fonts.py`
+font checker in that directory. V1.4 does not import the v1.3 CLI. Existing v1.3
+command lines remain supported independently.
 
 ## Command line: v1.3
 
@@ -230,7 +306,7 @@ fonts do not fix separate equation-import or layout issues in LibreOffice.
 
 ## H5P output and compatibility
 
-All versions produce one PNG image per included slide inside an H5P Course
+All versions produce one PNG image per included slide or PDF page inside an H5P Course
 Presentation. Text and objects are not editable; animations, video, and speaker
 notes are not transferred. LibreOffice may render fonts, diagrams, and layouts
 differently from PowerPoint. Install the source fonts and inspect the result
@@ -257,10 +333,19 @@ python3 -m unittest discover -s tests -v
 H5P_RUN_INTEGRATION=1 python3 -m unittest discover -s tests -v
 ```
 
+The default suite includes real PDF-to-H5P conversions, with checks for page
+order, both resolutions, mixed page proportions, folder continuation after
+failures, overwrite protection, and temporary-file cleanup. These PDF checks do
+not require an Office application.
+It also checks v1.4 mixed-format batches, conflicting names across formats,
+PDF conversion without PPTX modules, and continuation after Office/font errors.
+
 The integration tests require LibreOffice and the bundled
 [Introduction to H5P fixture](tests/fixtures/introduction_to_h5p/README.md).
 They cover missing-font rejection, silent override, and conversion with available
 fonts as well as the existing packaging and folder-conversion checks.
+The v1.4 integration check converts a mixed PPTX/PDF folder using real
+LibreOffice, including hidden-slide filtering and continuation after a bad PDF.
 Fixtures group the source deck and reference exports by presentation. Derived
 decks, conversion outputs, and temporary PDFs are created in temporary directories.
 PowerPoint reference exports are for visual comparison; different apps need not
